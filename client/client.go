@@ -10,28 +10,25 @@ type Client interface {
 // Options 定义了客户端调用参数
 type Options struct {
 	// 调用地址
-	Target string
+	target string
 	// 超时时间
-	Timeout time.Duration
+	timeout time.Duration
 
 }
 
+type Option func(*Options)
+
 func WithTarget(target string) Option {
 	return func(o *Options) {
-		o.Target = target
+		o.target = target
 	}
 }
 
 func WithTimeout(timeout time.Duration) Option {
 	return func(o *Options) {
-		o.Timeout = timeout
+		o.timeout = timeout
 	}
 }
-
-
-
-type Option func(*Options)
-
 
 type defaultClient struct {
 	options *Options
