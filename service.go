@@ -14,9 +14,12 @@ type Service interface {
 
 
 type service struct{
-	serviceName string
+	ctx context.Context  		// 每一个 service 一个上下文进行管理
+	cancel context.CancelFunc   // context 的控制器
+	serviceName string   		// 服务名
 	handlers map[string]Handler
-	opts ServiceOptions
+	opts ServiceOptions  		// 参数选项
+
 }
 
 type Handler func(context.Context)
@@ -27,11 +30,13 @@ func (s *service) Register(handlerName string, handler Handler) {
 }
 
 func (s *service) Serve() {
-	if s.opts.target == "" {
-		log.Error("server listen address is empty")
+
+	if err := s.opts.transport.ListenAndServe(s.ctx, s.opts.transportOptions ...); err != nil {
+		log.Error("%s serve error, %v", s.serviceName, err)
 		return
 	}
 
+	<- s.ctx.Done()
 }
 
 

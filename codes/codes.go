@@ -1,8 +1,13 @@
 package codes
 
+import "fmt"
+
 // 框架状态码
 const (
 	OK = 0
+	ConfigErrorCode = 101
+	FrameworkInitErrorCode = 102
+	ServerAddressErrorCode = 103
 )
 
 type ErrorCode uint8
@@ -13,9 +18,12 @@ const (
 	BusinuessError = 2
 )
 
+
 // 框架错误码
-const (
-	CONFIGERROR = 201
+var (
+	ConfigError = NewFrameworkError(ConfigErrorCode,"config error")
+	FrameworkInitError = NewFrameworkError(FrameworkInitErrorCode, "framework init error")
+	ServerAddressError = NewFrameworkError(ServerAddressErrorCode, "framework init error")
 )
 
 
@@ -39,10 +47,24 @@ func (e *Error) Error() string {
 		return Success
 	}
 	if e.Type == FrameworkError {
-		return e.Message
+		return fmt.Sprintf("type : framework, code : %d, msg : %s",e.Code, e.Message)
+	}
+	return fmt.Sprintf("type : business, code : %d, msg : %s",e.Code, e.Message)
+}
+
+func NewFrameworkError(code int, msg string) *Error{
+	return &Error{
+		Type : FrameworkError,
+		Code : code,
+		Message : msg,
 	}
 }
 
-func NewFrameError() {
-
+// 方便业务使用，默认是业务类型错误
+func New(code int, msg string) *Error{
+	return &Error{
+		Type : BusinuessError,
+		Code : code,
+		Message : msg,
+	}
 }
