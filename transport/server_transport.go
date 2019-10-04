@@ -5,6 +5,8 @@ import (
 	"github.com/diubrother/gorpc/codes"
 	"net"
 	"fmt"
+	"time"
+	"sync"
 )
 
 type serverTransport struct {
@@ -35,7 +37,7 @@ func (s *serverTransport) ListenAndServeTcp(ctx context.Context, opts ...ServerT
 	for {
 		if conn , err := lis.Accept(); err != nil {
 			return codes.NewFrameworkError(103,fmt.Sprintf("listener accept error, address : %s", s.opts.Address))
-			go handleConn(ctx , conn)
+			go s.handleConn(ctx , conn)
 		}
 
 	}
@@ -47,7 +49,52 @@ func (s *serverTransport) ListenAndServeUdp(ctx context.Context, opts ...ServerT
 	return nil
 }
 
-func handleConn(ctx context.Context, conn net.Conn) error {
+func (s *serverTransport) handleConn(ctx context.Context, rawConn net.Conn) error {
+	rawConn.SetDeadline(time.Now().Add(s.opts.Timeout))
+	tcpConn := newTcpConn(rawConn)
+
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		s.read(ctx,tcpConn)
+	}()
+	go func() {
+		defer wg.Done()
+		s.handle(ctx,tcpConn)
+	}()
+	go func() {
+		defer wg.Done()
+		s.write(ctx,tcpConn)
+	}()
+	wg.Wait()
 
 	return nil
+}
+
+func (s *serverTransport) read(ctx context.Context, conn *tcpConn) {
+	
+}
+
+func (s *serverTransport) handle(ctx context.Context, conn *tcpConn) {
+
+}
+
+func (s *serverTransport) write(ctx context.Context, conn *tcpConn) {
+
+}
+
+
+type tcpConn struct {
+	conn net.Conn
+	in chan []byte
+	out chan []byte
+}
+
+func newTcpConn(rawConn net.Conn) *tcpConn {
+	return &tcpConn{
+		conn : rawConn,
+		in : make(chan []byte, 1),
+		out : make(chan []byte, 1),
+	}
 }
