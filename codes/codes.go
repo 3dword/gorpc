@@ -8,6 +8,8 @@ const (
 	ConfigErrorCode = 101
 	FrameworkInitErrorCode = 102
 	ServerAddressErrorCode = 103
+	ServerEncodeErrorCode = 104
+	ServerDecodeErrorCode = 105
 )
 
 type ErrorCode uint8
@@ -24,6 +26,8 @@ var (
 	ConfigError = NewFrameworkError(ConfigErrorCode,"config error")
 	FrameworkInitError = NewFrameworkError(FrameworkInitErrorCode, "framework init error")
 	ServerAddressError = NewFrameworkError(ServerAddressErrorCode, "framework init error")
+	ServerEncodeError = NewFrameworkError(ServerEncodeErrorCode, "server encode error")
+	ServerDecodeError = NewFrameworkError(ServerDecodeErrorCode, "server decode error")
 )
 
 

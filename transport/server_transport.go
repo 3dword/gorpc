@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 	"sync"
+	"github.com/diubrother/gorpc/log"
 )
 
 type serverTransport struct {
@@ -72,11 +73,18 @@ func (s *serverTransport) handleConn(ctx context.Context, rawConn net.Conn) erro
 	return nil
 }
 
-func (s *serverTransport) read(ctx context.Context, conn *tcpConn) {
-	
+func (s *serverTransport) read(ctx context.Context, conn *tcpConn) error {
+	err := s.opts.Codec.Decode(conn.conn, msg)
+	if err != nil {
+		log.Error("read data from conn error, %v", err)
+		return codes.ServerDecodeError
+	}
+	conn.in <- msg
+	return nil
 }
 
 func (s *serverTransport) handle(ctx context.Context, conn *tcpConn) {
+	req := <- conn.in
 
 }
 
