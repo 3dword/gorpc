@@ -6,8 +6,8 @@ import (
 	"net"
 	"fmt"
 	"time"
-	"sync"
 	"github.com/diubrother/gorpc/log"
+	"github.com/diubrother/gorpc/metadata"
 )
 
 type serverTransport struct {
@@ -15,7 +15,6 @@ type serverTransport struct {
 }
 
 func (s *serverTransport) ListenAndServe(ctx context.Context, opts ...ServerTransportOption) error {
-
 	switch s.opts.Network {
 		case "tcp","tcp4","tcp6":
 			return s.ListenAndServeTcp(ctx, opts ...)
@@ -53,38 +52,23 @@ func (s *serverTransport) ListenAndServeUdp(ctx context.Context, opts ...ServerT
 func (s *serverTransport) handleConn(ctx context.Context, rawConn net.Conn) error {
 	rawConn.SetDeadline(time.Now().Add(s.opts.Timeout))
 	tcpConn := newTcpConn(rawConn)
-
-	var wg sync.WaitGroup
-	wg.Add(3)
-	go func() {
-		defer wg.Done()
-		s.read(ctx,tcpConn)
-	}()
-	go func() {
-		defer wg.Done()
-		s.handle(ctx,tcpConn)
-	}()
-	go func() {
-		defer wg.Done()
-		s.write(ctx,tcpConn)
-	}()
-	wg.Wait()
-
+	s.read(ctx,tcpConn)
+	s.handle(ctx,tcpConn)
+	s.write(ctx,tcpConn)
 	return nil
 }
 
 func (s *serverTransport) read(ctx context.Context, conn *tcpConn) error {
+	msg := metadata.ServerMetadata(ctx)
 	err := s.opts.Codec.Decode(conn.conn, msg)
 	if err != nil {
 		log.Error("read data from conn error, %v", err)
 		return codes.ServerDecodeError
 	}
-	conn.in <- msg
 	return nil
 }
 
 func (s *serverTransport) handle(ctx context.Context, conn *tcpConn) {
-	req := <- conn.in
 
 }
 
@@ -95,14 +79,11 @@ func (s *serverTransport) write(ctx context.Context, conn *tcpConn) {
 
 type tcpConn struct {
 	conn net.Conn
-	in chan []byte
-	out chan []byte
+
 }
 
 func newTcpConn(rawConn net.Conn) *tcpConn {
 	return &tcpConn{
 		conn : rawConn,
-		in : make(chan []byte, 1),
-		out : make(chan []byte, 1),
 	}
 }
