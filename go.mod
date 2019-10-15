@@ -6,5 +6,5 @@ go 1.12
 
 require (
 	github.com/golang/protobuf v1.3.2 // indirect
-	golang.org/x/net v0.0.0-20191007182048-72f939374954 // indirect
+	golang.org/x/net v0.0.0-20191009170851-d66e71096ffb // indirect
 )

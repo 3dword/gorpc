@@ -2,13 +2,17 @@ package transport
 
 import (
 	"context"
+	"encoding/binary"
 	"github.com/diubrother/gorpc/codes"
+	"golang.org/x/net/http2"
+	"io"
 	"net"
 	"fmt"
 	"time"
 	"github.com/diubrother/gorpc/log"
-	"github.com/diubrother/gorpc/metadata"
 )
+
+const GORPCHeaderLength = 5
 
 type serverTransport struct {
 	opts *ServerTransportOptions
@@ -50,25 +54,49 @@ func (s *serverTransport) ListenAndServeUdp(ctx context.Context, opts ...ServerT
 }
 
 func (s *serverTransport) handleConn(ctx context.Context, rawConn net.Conn) error {
+
 	rawConn.SetDeadline(time.Now().Add(s.opts.Timeout))
+
 	tcpConn := newTcpConn(rawConn)
-	s.read(ctx,tcpConn)
-	s.handle(ctx,tcpConn)
+	req , err := s.read(ctx,tcpConn)
+
+	if err != nil {
+		return err
+	}
+
+
+	s.handle(ctx,tcpConn, req)
 	s.write(ctx,tcpConn)
 	return nil
 }
 
-func (s *serverTransport) read(ctx context.Context, conn *tcpConn) error {
-	msg := metadata.ServerMetadata(ctx)
-	err := s.opts.Codec.Decode(conn.conn, msg)
+func (s *serverTransport) read(ctx context.Context, conn *tcpConn) ([]byte, error) {
+	// 先读出 http包头
+	http2.ReadFrameHeader(conn.conn)
+
+	// 再读出协议包头
+	header := make([]byte, GORPCHeaderLength)
+	io.ReadFull(conn.conn, header)
+
+	compressingType := header[0]
+
+	if compressingType == 1 {
+		// TODO 压缩模式，需要解压缩
+	}
+
+	length := binary.BigEndian.Uint32(header[1:])
+	msg := make([]byte, length)
+	_, err := io.ReadFull(conn.conn, msg)
+
 	if err != nil {
 		log.Error("read data from conn error, %v", err)
-		return codes.ServerDecodeError
+		return nil, codes.ServerDecodeError
 	}
-	return nil
+	return msg, nil
 }
 
-func (s *serverTransport) handle(ctx context.Context, conn *tcpConn) {
+func (s *serverTransport) handle(ctx context.Context, conn *tcpConn, req []byte) []byte() {
+
 
 }
 
@@ -87,3 +115,6 @@ func newTcpConn(rawConn net.Conn) *tcpConn {
 		conn : rawConn,
 	}
 }
+
+
+
