@@ -12,7 +12,7 @@ type Server struct {
 }
 
 
-func (s *Server) Register(serviceName string, service *Service) {
+func (s *Server) Register(serviceName string, service Service) {
 	if serviceName == "" {
 		return
 	}
