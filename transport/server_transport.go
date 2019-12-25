@@ -4,12 +4,11 @@ import (
 	"context"
 	"encoding/binary"
 	"github.com/diubrother/gorpc/codes"
+	"github.com/diubrother/gorpc/log"
 	"golang.org/x/net/http2"
 	"io"
 	"net"
-	"fmt"
 	"time"
-	"github.com/diubrother/gorpc/log"
 )
 
 const GORPCHeaderLength = 5
@@ -25,7 +24,7 @@ func (s *serverTransport) ListenAndServe(ctx context.Context, opts ...ServerTran
 		case "udp","udp4", "udp6":
 			return s.ListenAndServeUdp(ctx, opts ...)
 		default:
-			return codes.NewFrameworkError(102, "network not supported")
+			return codes.NetworkNotSupportedError
 	}
 }
 
@@ -36,11 +35,11 @@ func (s *serverTransport) ListenAndServeTcp(ctx context.Context, opts ...ServerT
 
 	lis, err := net.Listen(s.opts.Network, s.opts.Address)
 	if err != nil {
-		return codes.NewFrameworkError(201, err.Error())
+		return codes.NewFrameworkError(codes.ServerNetworkErrorCode, err.Error())
 	}
 	for {
 		if conn , err := lis.Accept(); err != nil {
-			return codes.NewFrameworkError(103,fmt.Sprintf("listener accept error, address : %s", s.opts.Address))
+			return codes.NewFrameworkError(codes.ServerNetworkErrorCode, err.Error())
 			go s.handleConn(ctx , conn)
 		}
 
@@ -56,7 +55,6 @@ func (s *serverTransport) ListenAndServeUdp(ctx context.Context, opts ...ServerT
 func (s *serverTransport) handleConn(ctx context.Context, rawConn net.Conn) error {
 
 	rawConn.SetDeadline(time.Now().Add(s.opts.Timeout))
-
 	tcpConn := newTcpConn(rawConn)
 	req , err := s.read(ctx,tcpConn)
 
@@ -64,10 +62,13 @@ func (s *serverTransport) handleConn(ctx context.Context, rawConn net.Conn) erro
 		return err
 	}
 
+	rsp , err := s.handle(ctx,tcpConn, req)
+	if err != nil {
+		return err
+	}
 
-	s.handle(ctx,tcpConn, req)
-	s.write(ctx,tcpConn)
-	return nil
+	err = s.write(ctx,tcpConn,rsp)
+	return err
 }
 
 func (s *serverTransport) read(ctx context.Context, conn *tcpConn) ([]byte, error) {
@@ -95,13 +96,21 @@ func (s *serverTransport) read(ctx context.Context, conn *tcpConn) ([]byte, erro
 	return msg, nil
 }
 
-func (s *serverTransport) handle(ctx context.Context, conn *tcpConn, req []byte) []byte() {
+func (s *serverTransport) handle(ctx context.Context, conn *tcpConn, req []byte) ([]byte, error) {
 
+	rsp , err := s.opts.Handler.Handle(ctx, req)
 
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp, nil
 }
 
-func (s *serverTransport) write(ctx context.Context, conn *tcpConn) {
+func (s *serverTransport) write(ctx context.Context, conn *tcpConn, rsp []byte) error {
+	_, err := conn.conn.Write(rsp)
 
+	return err
 }
 
 

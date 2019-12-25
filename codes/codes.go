@@ -10,6 +10,16 @@ const (
 	ServerAddressErrorCode = 103
 	ServerEncodeErrorCode = 104
 	ServerDecodeErrorCode = 105
+	ServerNetworkErrorCode = 106
+
+	NetworkNotSupportedErrorCode = 201
+	ClientMsgErrorCode = 202
+	ClientNetworkErrorCode = 203
+	ClientDialErrorCode = 204
+
+	ConnectionPoolInitErrorCode = 301
+	ConnectionClosedErrorCode = 302
+
 )
 
 type ErrorCode uint8
@@ -28,6 +38,16 @@ var (
 	ServerAddressError = NewFrameworkError(ServerAddressErrorCode, "framework init error")
 	ServerEncodeError = NewFrameworkError(ServerEncodeErrorCode, "server encode error")
 	ServerDecodeError = NewFrameworkError(ServerDecodeErrorCode, "server decode error")
+	ServerNetworkError = NewFrameworkError(ServerNetworkErrorCode, "server network error")
+
+
+	NetworkNotSupportedError = NewFrameworkError(NetworkNotSupportedErrorCode,"network not supported")
+
+	ClientMsgError = NewFrameworkError(ClientMsgErrorCode, "client msg error")
+	ClientNetworkError = NewFrameworkError(ClientNetworkErrorCode, "client network error")
+	ConnectionPoolInitError = NewFrameworkError(ConnectionPoolInitErrorCode, "connection pool error")
+	ConnectionClosedError = NewFrameworkError(ConnectionClosedErrorCode, "connection closed")
+	ClientDialError = NewFrameworkError(ClientDialErrorCode, "client dial error")
 )
 
 

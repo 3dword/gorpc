@@ -22,7 +22,11 @@ type service struct{
 
 }
 
-type Handler func(context.Context)
+type Handler interface {
+	Handle(context.Context, []byte) ([]byte, error)
+}
+
+
 
 
 func (s *service) Register(handlerName string, handler Handler) {
