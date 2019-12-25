@@ -1,12 +1,12 @@
 package codec
 
 import (
-	"github.com/golang/protobuf/proto"
-	"sync"
-	"math"
-	"golang.org/x/net/http2"
 	"github.com/diubrother/gorpc/codes"
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/http2"
 	"io"
+	"math"
+	"sync"
 )
 
 type Codec interface {
