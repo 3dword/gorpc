@@ -10,7 +10,7 @@ type ServerTransport interface {
 
 type ClientTransport interface {
 	// 发送请求
-	Send(context.Context, []byte, ...ClientTransportOption) error
+	Send(context.Context, []byte, ...ClientTransportOption) ([]byte, error)
 }
 
 

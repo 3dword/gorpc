@@ -50,7 +50,7 @@ func (c *defaultClient) Invoke(ctx context.Context, req interface{}, rsp interfa
 		return codes.ClientMsgError
 	}
 
-	if err := c.options.Transport.Send(ctx, reqBytes); err != nil {
+	if _, err := c.options.Transport.Send(ctx, reqBytes); err != nil {
 		return codes.ClientNetworkError
 	}
 

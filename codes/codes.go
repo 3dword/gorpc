@@ -16,9 +16,12 @@ const (
 	ClientMsgErrorCode = 202
 	ClientNetworkErrorCode = 203
 	ClientDialErrorCode = 204
+	ClientTimeoutErrorCode = 205
+	ClientContextCanceledErrorCode = 206
+
 
 	ConnectionPoolInitErrorCode = 301
-	ConnectionClosedErrorCode = 302
+	ConnectionErrorCode = 302
 
 )
 
@@ -45,9 +48,11 @@ var (
 
 	ClientMsgError = NewFrameworkError(ClientMsgErrorCode, "client msg error")
 	ClientNetworkError = NewFrameworkError(ClientNetworkErrorCode, "client network error")
-	ConnectionPoolInitError = NewFrameworkError(ConnectionPoolInitErrorCode, "connection pool error")
-	ConnectionClosedError = NewFrameworkError(ConnectionClosedErrorCode, "connection closed")
 	ClientDialError = NewFrameworkError(ClientDialErrorCode, "client dial error")
+	ConnectionPoolInitError = NewFrameworkError(ConnectionPoolInitErrorCode, "connection pool error")
+	ConnectionError = NewFrameworkError(ConnectionErrorCode, "connection closed")
+	ClientTimeoutError = NewFrameworkError(ClientNetworkErrorCode, "connection network error")
+	ClientContextCanceledError  = NewFrameworkError(ClientContextCanceledErrorCode, "context canceled")
 )
 
 

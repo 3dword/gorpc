@@ -2,6 +2,7 @@ package connpool
 
 import (
 	"context"
+	"errors"
 	"github.com/diubrother/gorpc/codes"
 	"net"
 	"sync"
@@ -14,6 +15,47 @@ type Pool interface {
 type pool struct {
 	opts *Options
 	conns sync.Map
+}
+
+// TODO 暴露 ConnPool 属性
+var DefaultPool = NewConnPool()
+
+func NewConnPool(opt ...Option) *pool {
+	// 默认值
+	opts := &Options {
+		initialCap: 5,
+		maxCap: 1000,
+	}
+	m := sync.Map{}
+
+	p := &pool {
+		conns : m,
+		opts : opts,
+	}
+	for _, o := range opt {
+		o(p.opts)
+	}
+
+	return p
+}
+
+func (p *pool) Get(ctx context.Context, network string, address string) (net.Conn, error) {
+
+	if value ,ok := p.conns.Load(address); ok {
+		if cp, ok := value.(*channelPool); ok {
+			conn, err := cp.Get(ctx)
+			return cp.wrapConn(conn), err
+		}
+	}
+
+	cp, err := p.NewChannelPool(ctx, network, address)
+	if err != nil {
+		return nil, codes.ConnectionPoolInitError
+	}
+
+	p.conns.Store(address, cp)
+
+	return cp.Get(ctx)
 }
 
 type channelPool struct {
@@ -49,12 +91,12 @@ func (p *pool) NewChannelPool(ctx context.Context, network string, address strin
 
 func (c *channelPool) Get(ctx context.Context) (net.Conn, error) {
 	if c.conns == nil {
-		return nil, codes.ConnectionClosedError
+		return nil, errors.New("connection closed")
 	}
 	select {
 		case conn := <-c.conns :
 			if conn == nil {
-				return nil, codes.ConnectionClosedError
+				return nil, errors.New("connection closed")
 			}
 			return c.wrapConn(conn), nil
 		default:
@@ -84,7 +126,7 @@ func (c *channelPool) Close() {
 
 func (c *channelPool) Put(conn net.Conn) error {
 	if conn == nil {
-		return codes.ConnectionClosedError
+		return errors.New("connection closed")
 	}
 	if c.conns == nil {
 		conn.Close()
@@ -101,22 +143,5 @@ func (c *channelPool) Put(conn net.Conn) error {
 	}
 }
 
-func (p *pool) Get(ctx context.Context, network string, address string) (net.Conn, error) {
 
-	if value ,ok := p.conns.Load(address); ok {
-		if cp, ok := value.(*channelPool); ok {
-			conn, err := cp.Get(ctx)
-			return cp.wrapConn(conn), err
-		}
-	}
-
-	cp, err := p.NewChannelPool(ctx, network, address)
-	if err != nil {
-		return nil, codes.ConnectionPoolInitError
-	}
-
-	p.conns.Store(address, cp)
-
-	return cp.Get(ctx)
-}
 
