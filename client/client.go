@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+// 全局使用一个 client
+var DefaultClient = New()
+
+var New = func() Client {
+	return &defaultClient{}
+}
+
+
 // Client 定义了客户端通用接口
 type Client interface {
 	Invoke(ctx context.Context, req interface{}, rsp interface{}, opts ...Option) error

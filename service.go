@@ -27,8 +27,6 @@ type Handler interface {
 }
 
 
-
-
 func (s *service) Register(handlerName string, handler Handler) {
 	s.handlers[handlerName] = handler
 }
