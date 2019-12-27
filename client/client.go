@@ -3,8 +3,7 @@ package client
 import (
 	"context"
 	"github.com/diubrother/gorpc/codes"
-	"github.com/diubrother/gorpc/transport"
-	"time"
+	"github.com/diubrother/gorpc/interceptor"
 )
 
 // 全局使用一个 client
@@ -20,29 +19,6 @@ type Client interface {
 	Invoke(ctx context.Context, req interface{}, rsp interface{}, opts ...Option) error
 }
 
-// Options 定义了客户端调用参数
-type Options struct {
-	// 调用地址
-	target string
-	// 超时时间
-	timeout time.Duration
-
-	Transport transport.ClientTransport
-}
-
-type Option func(*Options)
-
-func WithTarget(target string) Option {
-	return func(o *Options) {
-		o.target = target
-	}
-}
-
-func WithTimeout(timeout time.Duration) Option {
-	return func(o *Options) {
-		o.timeout = timeout
-	}
-}
 
 type defaultClient struct {
 	options *Options
@@ -52,6 +28,12 @@ func (c *defaultClient) Invoke(ctx context.Context, req interface{}, rsp interfa
 	for _, opt := range opts {
 		opt(c.options)
 	}
+
+	// 先执行拦截器
+	return interceptor.Intercept(ctx, req, rsp, c.options.interceptors, c.invoke)
+}
+
+func (c *defaultClient) invoke(ctx context.Context, req interface{}, rsp interface{}) error {
 
 	reqBytes, ok := req.([]byte)
 	if !ok {
@@ -64,3 +46,6 @@ func (c *defaultClient) Invoke(ctx context.Context, req interface{}, rsp interfa
 
 	return nil
 }
+
+
+
